@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Emoji Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #87CEEB;
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        .game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
+            border: 4px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+        .bird {
+            position: absolute;
+            left: 100px;
+            width: 40px;
+            height: 40px;
+            font-size: 40px;
+            line-height: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+            display: none;
+            transform: scaleX(-1);
+        }
+        .bird.jumping {
+            transform: scaleX(-1) rotate(-20deg);
+        }
+        .bird.flapping {
+            animation: flap 0.3s infinite alternate;
+        }
+        @keyframes flap {
+            0% { transform: scaleX(-1) rotate(0deg); }
+            100% { transform: scaleX(-1) rotate(10deg); }
+        }
+        .feather {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+            line-height: 20px;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .obstacle {
+            position: absolute;
+            width: 50px;
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            border: 3px solid #2E7D32;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        .obstacle.top {
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+        }
+        .obstacle.bottom {
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .coin, .power-up {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+            text-align: center;
+            line-height: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .coin {
+            color: #FFD700;
+        }
+        .power-up {
+            color: #FF4500;
+        }
+        .score, .high-score, .difficulty {
+            position: absolute;
+            left: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+            display: none;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .score { top: 10px; }
+        .high-score { top: 45px; font-size: 18px; }
+        .difficulty { top: 75px; font-size: 16px; }
+        .start-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        }
+        .difficulty-buttons {
+            margin-top: 20px;
+        }
+        .difficulty-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .difficulty-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+        .difficulty-button.selected {
+            background: linear-gradient(to right, #FFD700, #FFA500);
+            transform: scale(1.1);
+        }
+        .start-button {
+            padding: 15px 30px;
+            font-size: 20px;
+            margin-top: 20px;
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to bottom, #8B4513, #A0522D);
+            z-index: 5;
+            display: none;
+        }
+        .countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 15;
+            display: none;
+        }
+        .username-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            display: none;
+        }
+        .username-input {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+            width: 200px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+        }
+        .leaderboard-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+        }
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .leaderboard-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0,0,0,0.05);
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="gameContainer">
+        <div class="score" id="score">Score: 0</div>
+        <div class="high-score" id="highScore">High Score: 0</div>
+        <div class="difficulty" id="difficulty">Difficulty: Easy</div>
+        <div class="bird" id="bird">🐦</div>
+        <div class="ground" id="ground"></div>
+        <div class="start-screen" id="startScreen">
+            <h2>Flappy Bird</h2>
+            <div class="difficulty-buttons">
+                <button class="difficulty-button selected" data-difficulty="easy">Easy</button>
+                <button class="difficulty-button" data-difficulty="medium">Medium</button>
+                <button class="difficulty-button" data-difficulty="hard">Hard</button>
+            </div>
+            <button class="start-button" id="startButton">Start Game</button>
+            <button class="start-button" id="leaderboardButton">Leaderboard</button>
+        </div>
+        <div class="username-screen" id="usernameScreen">
+            <h2>Enter Your Username</h2>
+            <input type="text" class="username-input" id="usernameInput" maxlength="15" placeholder="Your username">
+            <button class="start-button" id="submitUsername">Submit</button>
+        </div>
+        <div class="leaderboard-screen" id="leaderboardScreen">
+            <h2>World Leaderboard</h2>
+            <ul class="leaderboard-list" id="leaderboardList"></ul>
+            <button class="start-button" id="closeLeaderboard">Close</button>
+        </div>
+        <div class="countdown" id="countdown"></div>
+    </div>
+
+    <script>
+        const bird = document.getElementById("bird");
+        const gameContainer = document.getElementById("gameContainer");
+        const scoreDisplay = document.getElementById("score");
+        const highScoreDisplay = document.getElementById("highScore");
+        const difficultyDisplay = document.getElementById("difficulty");
+        const startScreen = document.getElementById("startScreen");
+        const startButton = document.getElementById("startButton");
+        const ground = document.getElementById("ground");
+        const countdownDisplay = document.getElementById("countdown");
+        const difficultyButtons = document.querySelectorAll(".difficulty-button");
+        const usernameScreen = document.getElementById("usernameScreen");
+        const usernameInput = document.getElementById("usernameInput");
+        const submitUsername = document.getElementById("submitUsername");
+        const leaderboardButton = document.getElementById("leaderboardButton");
+        const leaderboardScreen = document.getElementById("leaderboardScreen");
+        const leaderboardList = document.getElementById("leaderboardList");
+        const closeLeaderboard = document.getElementById("closeLeaderboard");
+
+        let birdY = 300;
+        let birdX = 100;  // Added horizontal position tracking
+        let gravity;
+        let velocity = 0;
+        let isGameOver = false;
+        let isGameStarted = false;
+        let isCountdownActive = false;
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let obstacleSpeed;
+        let obstacleFrequency;
+        let gameLoop;
+        let selectedDifficulty = "easy";
+        let hasShield = false;
+        let speedBoostActive = false;
+        let horizontalSpeed = 0;  // Added for horizontal movement
+        let baseHorizontalSpeed = 0;  // Base speed will be 0 since bird doesn't move horizontally by default
+        let shrinkActive = false;
+        let originalBirdSize = { width: 40, height: 40, fontSize: 40 };
+        let currentUsername = "";
+        let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+
+        // Sound effects
+        const jumpSound = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+        const coinSound = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+        const crashSound = new Audio('data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+        const powerUpSound = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+
+        highScoreDisplay.innerText = `High Score: ${highScore}`;
+
+        const difficultySettings = {
+            easy: { gravity: 0.8, obstacleSpeed: 2, obstacleFrequency: 2000 },
+            medium: { gravity: 0.9, obstacleSpeed: 4, obstacleFrequency: 1500 },
+            hard: { gravity: 1.0, obstacleSpeed: 5, obstacleFrequency: 1200 }
+        };
+
+        const powerUps = [
+            { type: "speed", emoji: "🚀", duration: 5000, effect: activateSpeedBoost },
+            { type: "shield", emoji: "🛡️", duration: 10000, effect: activateShield },
+            { type: "shrink", emoji: "🔍", duration: 7000, effect: activateShrink }
+        ];
+
+        difficultyButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                difficultyButtons.forEach(btn => btn.classList.remove("selected"));
+                button.classList.add("selected");
+                selectedDifficulty = button.dataset.difficulty;
+                difficultyDisplay.innerText = `Difficulty: ${selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1)}`;
+            });
+        });
+
+        function showUsernameScreen() {
+            startScreen.style.display = "none";
+            usernameScreen.style.display = "block";
+            usernameInput.focus();
+        }
+
+        function startGame() {
+            const settings = difficultySettings[selectedDifficulty];
+            gravity = settings.gravity;
+            obstacleSpeed = settings.obstacleSpeed;
+            obstacleFrequency = settings.obstacleFrequency;
+
+            usernameScreen.style.display = "none";
+            bird.style.display = "block";
+            bird.style.top = birdY + "px";
+            bird.style.left = birdX + "px";
+            scoreDisplay.style.display = "block";
+            highScoreDisplay.style.display = "block";
+            difficultyDisplay.style.display = "block";
+            ground.style.display = "block";
+            bird.classList.add("flapping");
+
+            isCountdownActive = true;
+            countdownDisplay.style.display = "block";
+            let countdown = 3;
+            countdownDisplay.innerText = countdown;
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    countdownDisplay.innerText = countdown;
+                } else {
+                    countdownDisplay.innerText = "Go!";
+                    setTimeout(() => {
+                        countdownDisplay.style.display = "none";
+                        isGameStarted = true;
+                        isCountdownActive = false;
+                        document.addEventListener("keydown", jump);
+                        gameLoop = setInterval(updateGame, 20);
+                        spawnObstacle();
+                    }, 500);
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+
+        startButton.addEventListener("click", showUsernameScreen);
+
+        submitUsername.addEventListener("click", () => {
+            const username = usernameInput.value.trim();
+            if (username.length > 0) {
+                currentUsername = username;
+                startGame();
+            } else {
+                alert("Please enter a username!");
+            }
+        });
+
+        usernameInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                submitUsername.click();
+            }
+        });
+
+        function showLeaderboard() {
+            startScreen.style.display = "none";
+            leaderboardScreen.style.display = "block";
+            
+            leaderboardList.innerHTML = "";
+            const sortedLeaderboard = [...leaderboard].sort((a, b) => b.score - a.score).slice(0, 10);
+            
+            sortedLeaderboard.forEach((entry, index) => {
+                const li = document.createElement("li");
+                li.innerHTML = `<span>${index + 1}. ${entry.username}</span><span>${entry.score}</span>`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        leaderboardButton.addEventListener("click", showLeaderboard);
+
+        closeLeaderboard.addEventListener("click", () => {
+            leaderboardScreen.style.display = "none";
+            startScreen.style.display = "block";
+        });
+
+        function updateLeaderboard() {
+            const existingEntry = leaderboard.find(entry => entry.username === currentUsername);
+            if (existingEntry) {
+                if (score > existingEntry.score) {
+                    existingEntry.score = score;
+                    existingEntry.difficulty = selectedDifficulty;
+                }
+            } else {
+                leaderboard.push({
+                    username: currentUsername,
+                    score: score,
+                    difficulty: selectedDifficulty,
+                    date: new Date().toISOString()
+                });
+            }
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+        }
+
+        function jump(event) {
+            if (event.code === "Space" && !isGameOver && isGameStarted && !isCountdownActive) {
+                velocity = selectedDifficulty === "easy" ? -8 : -12;  // Removed speedBoost effect from jump
+                bird.classList.add("jumping");
+                jumpSound.play().catch(() => {});
+                setTimeout(() => bird.classList.remove("jumping"), 200);
+            }
+        }
+
+        function updateGame() {
+            if (!isGameStarted || isGameOver) return;
+
+            velocity += gravity;
+            birdY += velocity;
+            birdX += horizontalSpeed;  // Update horizontal position
+            
+            if (birdY < 0) {
+                birdY = 0;
+                velocity = 0;
+            }
+            if (birdY > 550) {
+                triggerFeatherExplosion({ x: birdX, y: 550, isGround: true });
+                endGame();
+                return;
+            }
+            if (birdX > 360) {  // Keep bird within right boundary
+                birdX = 360;
+            }
+            if (birdX < 0) {  // Keep bird within left boundary
+                birdX = 0;
+            }
+            
+            bird.style.top = birdY + "px";
+            bird.style.left = birdX + "px";
+            
+            checkCollisions();
+            updateScore();
+        }
+
+        function spawnObstacle() {
+            if (!isGameStarted || isGameOver) return;
+
+            const gap = 150;
+            const minHeight = 50;
+            const maxHeight = 400;
+            const obstacleHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+
+            const obstacleTop = document.createElement("div");
+            const obstacleBottom = document.createElement("div");
+            
+            obstacleTop.className = "obstacle top";
+            obstacleBottom.className = "obstacle bottom";
+            
+            obstacleTop.style.height = obstacleHeight + "px";
+            obstacleBottom.style.height = (600 - obstacleHeight - gap - 50) + "px";
+            
+            obstacleTop.style.top = "0px";
+            obstacleBottom.style.bottom = "50px";
+            
+            obstacleTop.style.left = "400px";
+            obstacleBottom.style.left = "400px";
+            
+            gameContainer.appendChild(obstacleTop);
+            gameContainer.appendChild(obstacleBottom);
+
+            if (Math.random() > 0.5) {
+                spawnCoin(obstacleHeight, gap);
+            }
+            if (Math.random() > 0.7) {
+                spawnPowerUp(obstacleHeight, gap);
+            }
+
+            function moveObstacle() {
+                if (!isGameStarted || isGameOver) {
+                    obstacleTop.remove();
+                    obstacleBottom.remove();
+                    return;
+                }
+
+                let currentLeft = parseInt(obstacleTop.style.left);
+                currentLeft -= obstacleSpeed;  // Removed speedBoost effect from obstacles
+                
+                if (currentLeft < -50) {
+                    obstacleTop.remove();
+                    obstacleBottom.remove();
+                } else {
+                    obstacleTop.style.left = currentLeft + "px";
+                    obstacleBottom.style.left = currentLeft + "px";
+                    requestAnimationFrame(moveObstacle);
+                }
+            }
+
+            requestAnimationFrame(moveObstacle);
+            setTimeout(spawnObstacle, obstacleFrequency);
+        }
+
+        function spawnCoin(obstacleHeight, gap) {
+            if (!isGameStarted || isGameOver) return;
+
+            const coin = document.createElement("div");
+            coin.className = "coin";
+            coin.innerHTML = "💰";
+            const coinY = obstacleHeight + (gap / 2) - 10;
+            coin.style.top = coinY + "px";
+            coin.style.left = "400px";
+            gameContainer.appendChild(coin);
+
+            function moveCoin() {
+                if (!isGameStarted || isGameOver) {
+                    coin.remove();
+                    return;
+                }
+
+                let currentLeft = parseInt(coin.style.left);
+                currentLeft -= obstacleSpeed;  // Match obstacle speed
+                
+                if (currentLeft < -20) {
+                    coin.remove();
+                } else {
+                    coin.style.left = currentLeft + "px";
+                    requestAnimationFrame(moveCoin);
+                }
+            }
+
+            requestAnimationFrame(moveCoin);
+        }
+
+        function spawnPowerUp(obstacleHeight, gap) {
+            if (!isGameStarted || isGameOver) return;
+
+            const powerUp = powerUps[Math.floor(Math.random() * powerUps.length)];
+            const powerUpElement = document.createElement("div");
+            powerUpElement.className = "power-up";
+            powerUpElement.innerHTML = powerUp.emoji;
+            powerUpElement.dataset.type = powerUp.type;
+            const powerUpY = obstacleHeight + (gap / 2) - 10;
+            powerUpElement.style.top = powerUpY + "px";
+            powerUpElement.style.left = "400px";
+            gameContainer.appendChild(powerUpElement);
+
+            function movePowerUp() {
+                if (!isGameStarted || isGameOver) {
+                    powerUpElement.remove();
+                    return;
+                }
+
+                let currentLeft = parseInt(powerUpElement.style.left);
+                currentLeft -= obstacleSpeed;  // Match obstacle speed
+                
+                if (currentLeft < -20) {
+                    powerUpElement.remove();
+                } else {
+                    powerUpElement.style.left = currentLeft + "px";
+                    requestAnimationFrame(movePowerUp);
+                }
+            }
+
+            requestAnimationFrame(movePowerUp);
+        }
+
+        function checkCollisions() {
+            const birdRect = bird.getBoundingClientRect();
+            const obstacles = document.querySelectorAll('.obstacle');
+            const coins = document.querySelectorAll('.coin');
+            const powerUpElements = document.querySelectorAll('.power-up');
+            
+            obstacles.forEach(obstacle => {
+                const obsRect = obstacle.getBoundingClientRect();
+                if (birdRect.left < obsRect.right &&
+                    birdRect.right > obsRect.left &&
+                    birdRect.top < obsRect.bottom &&
+                    birdRect.bottom > obsRect.top) {
+                    crashSound.play().catch(() => {});
+                    let collisionX, collisionY;
+                    if (birdRect.right > obsRect.left && birdRect.left < obsRect.left) {
+                        collisionX = obsRect.left;
+                    } else {
+                        collisionX = obsRect.right;
+                    }
+                    if (obstacle.classList.contains("top")) {
+                        collisionY = obsRect.bottom;
+                    } else {
+                        collisionY = obsRect.top;
+                    }
+                    if (hasShield) {
+                        hasShield = false;
+                        bird.style.backgroundColor = "transparent";
+                        obstacle.remove();
+                    } else {
+                        triggerFeatherExplosion({ 
+                            x: collisionX - 20, 
+                            y: collisionY - 20, 
+                            obstacle: obstacle 
+                        });
+                        endGame();
+                    }
+                }
+            });
+
+            coins.forEach(coin => {
+                const coinRect = coin.getBoundingClientRect();
+                if (birdRect.left < coinRect.right &&
+                    birdRect.right > coinRect.left &&
+                    birdRect.top < coinRect.bottom &&
+                    birdRect.bottom > coinRect.top) {
+                    coinSound.play().catch(() => {});
+                    coin.remove();
+                    score += 5;
+                    scoreDisplay.innerText = `Score: ${score}`;
+                }
+            });
+
+            powerUpElements.forEach(powerUpElement => {
+                const powerUpRect = powerUpElement.getBoundingClientRect();
+                if (birdRect.left < powerUpRect.right &&
+                    birdRect.right > powerUpRect.left &&
+                    birdRect.top < powerUpRect.bottom &&
+                    birdRect.bottom > powerUpRect.top) {
+                    powerUpSound.play().catch(() => {});
+                    const powerUp = powerUps.find(p => p.type === powerUpElement.dataset.type);
+                    if (powerUp) {
+                        powerUp.effect(powerUp.duration);
+                        powerUpElement.remove();
+                        score += 10;
+                        scoreDisplay.innerText = `Score: ${score}`;
+                    }
+                }
+            });
+        }
+
+        function updateScore() {
+            const birdRect = bird.getBoundingClientRect();
+            const obstacles = document.querySelectorAll('.obstacle');
+            
+            obstacles.forEach(obstacle => {
+                const obsRect = obstacle.getBoundingClientRect();
+                if (obsRect.right < birdRect.left && !obstacle.scored) {
+                    obstacle.scored = true;
+                    score++;
+                    scoreDisplay.innerText = `Score: ${score}`;
+                    
+                    if (score > highScore) {
+                        highScore = score;
+                        highScoreDisplay.innerText = `High Score: ${highScore}`;
+                        localStorage.setItem('highScore', highScore);
+                    }
+                }
+            });
+        }
+
+        function triggerFeatherExplosion(collisionPoint) {
+            bird.style.display = "none";
+            const featherCount = 8;
+
+            const containerRect = gameContainer.getBoundingClientRect();
+            let explosionX, explosionY;
+
+            if (collisionPoint.obstacle) {
+                const obsRect = collisionPoint.obstacle.getBoundingClientRect();
+                explosionX = (obsRect.left + obsRect.right) / 2 - containerRect.left;
+                explosionY = collisionPoint.y;
+            } else if (collisionPoint.isGround) {
+                explosionX = collisionPoint.x;
+                explosionY = collisionPoint.y;
+            }
+
+            for (let i = 0; i < featherCount; i++) {
+                const feather = document.createElement("div");
+                feather.className = "feather";
+                feather.innerHTML = "🪶";
+                feather.style.left = explosionX + "px";
+                feather.style.top = explosionY + "px";
+                gameContainer.appendChild(feather);
+
+                const angle = (Math.random() * Math.PI) - (Math.PI / 2);
+                const distance = 50 + Math.random() * 50;
+                const duration = 0.7 + Math.random() * 0.3;
+
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+
+                feather.animate([
+                    { transform: "translate(0, 0) rotate(0deg)", opacity: 1 },
+                    { transform: `translate(${x}px, ${y}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: duration * 1000,
+                    easing: "ease-out",
+                    fill: "forwards"
+                });
+
+                setTimeout(() => feather.remove(), duration * 1000);
+            }
+        }
+
+        function activateSpeedBoost(duration) {
+            speedBoostActive = true;
+            horizontalSpeed = 2;  // Set horizontal speed to 2 pixels per frame
+            bird.style.color = "#FF4500";
+            setTimeout(() => {
+                speedBoostActive = false;
+                horizontalSpeed = baseHorizontalSpeed;  // Reset to base speed (0)
+                bird.style.color = "inherit";
+            }, duration);
+        }
+
+        function activateShield(duration) {
+            hasShield = true;
+            bird.style.backgroundColor = "rgba(255, 215, 0, 0.3)";
+            setTimeout(() => {
+                hasShield = false;
+                bird.style.backgroundColor = "transparent";
+            }, duration);
+        }
+
+        function activateShrink(duration) {
+            shrinkActive = true;
+            bird.style.width = "20px";
+            bird.style.height = "20px";
+            bird.style.fontSize = "20px";
+            bird.style.lineHeight = "20px";
+            setTimeout(() => {
+                shrinkActive = false;
+                bird.style.width = originalBirdSize.width + "px";
+                bird.style.height = originalBirdSize.height + "px";
+                bird.style.fontSize = originalBirdSize.fontSize + "px";
+                bird.style.lineHeight = originalBirdSize.height + "px";
+            }, duration);
+        }
+
+        function endGame() {
+            if (!isGameOver) {
+                isGameOver = true;
+                bird.classList.remove("flapping");
+                clearInterval(gameLoop);
+                updateLeaderboard();
+                setTimeout(() => {
+                    alert(`Game Over!\nScore: ${score}\nHigh Score: ${highScore}`);
+                    showLeaderboard();
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>
