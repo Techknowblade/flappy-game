@@ -175,53 +175,6 @@
             z-index: 15;
             display: none;
         }
-        .username-screen {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.3);
-            display: none;
-        }
-        .username-input {
-            padding: 10px;
-            font-size: 16px;
-            margin: 10px 0;
-            width: 200px;
-            border: 2px solid #4CAF50;
-            border-radius: 5px;
-        }
-        .leaderboard-screen {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.3);
-            max-height: 80vh;
-            overflow-y: auto;
-            display: none;
-        }
-        .leaderboard-list {
-            list-style: none;
-            padding: 0;
-            margin: 20px 0;
-        }
-        .leaderboard-list li {
-            padding: 10px;
-            margin: 5px 0;
-            background: rgba(0,0,0,0.05);
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
     </style>
 </head>
 <body>
@@ -239,17 +192,6 @@
                 <button class="difficulty-button" data-difficulty="hard">Hard</button>
             </div>
             <button class="start-button" id="startButton">Start Game</button>
-            <button class="start-button" id="leaderboardButton">Leaderboard</button>
-        </div>
-        <div class="username-screen" id="usernameScreen">
-            <h2>Enter Your Username</h2>
-            <input type="text" class="username-input" id="usernameInput" maxlength="15" placeholder="Your username">
-            <button class="start-button" id="submitUsername">Submit</button>
-        </div>
-        <div class="leaderboard-screen" id="leaderboardScreen">
-            <h2>World Leaderboard</h2>
-            <ul class="leaderboard-list" id="leaderboardList"></ul>
-            <button class="start-button" id="closeLeaderboard">Close</button>
         </div>
         <div class="countdown" id="countdown"></div>
     </div>
@@ -265,16 +207,8 @@
         const ground = document.getElementById("ground");
         const countdownDisplay = document.getElementById("countdown");
         const difficultyButtons = document.querySelectorAll(".difficulty-button");
-        const usernameScreen = document.getElementById("usernameScreen");
-        const usernameInput = document.getElementById("usernameInput");
-        const submitUsername = document.getElementById("submitUsername");
-        const leaderboardButton = document.getElementById("leaderboardButton");
-        const leaderboardScreen = document.getElementById("leaderboardScreen");
-        const leaderboardList = document.getElementById("leaderboardList");
-        const closeLeaderboard = document.getElementById("closeLeaderboard");
 
         let birdY = 300;
-        let birdX = 100;  // Added horizontal position tracking
         let gravity;
         let velocity = 0;
         let isGameOver = false;
@@ -288,12 +222,8 @@
         let selectedDifficulty = "easy";
         let hasShield = false;
         let speedBoostActive = false;
-        let horizontalSpeed = 0;  // Added for horizontal movement
-        let baseHorizontalSpeed = 0;  // Base speed will be 0 since bird doesn't move horizontally by default
         let shrinkActive = false;
         let originalBirdSize = { width: 40, height: 40, fontSize: 40 };
-        let currentUsername = "";
-        let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
 
         // Sound effects
         const jumpSound = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
@@ -303,18 +233,21 @@
 
         highScoreDisplay.innerText = `High Score: ${highScore}`;
 
+        // Difficulty settings
         const difficultySettings = {
             easy: { gravity: 0.8, obstacleSpeed: 2, obstacleFrequency: 2000 },
             medium: { gravity: 0.9, obstacleSpeed: 4, obstacleFrequency: 1500 },
             hard: { gravity: 1.0, obstacleSpeed: 5, obstacleFrequency: 1200 }
         };
 
+        // Power-up definitions
         const powerUps = [
             { type: "speed", emoji: "🚀", duration: 5000, effect: activateSpeedBoost },
             { type: "shield", emoji: "🛡️", duration: 10000, effect: activateShield },
             { type: "shrink", emoji: "🔍", duration: 7000, effect: activateShrink }
         ];
 
+        // Handle difficulty selection
         difficultyButtons.forEach(button => {
             button.addEventListener("click", () => {
                 difficultyButtons.forEach(btn => btn.classList.remove("selected"));
@@ -324,28 +257,22 @@
             });
         });
 
-        function showUsernameScreen() {
-            startScreen.style.display = "none";
-            usernameScreen.style.display = "block";
-            usernameInput.focus();
-        }
-
         function startGame() {
             const settings = difficultySettings[selectedDifficulty];
             gravity = settings.gravity;
             obstacleSpeed = settings.obstacleSpeed;
             obstacleFrequency = settings.obstacleFrequency;
 
-            usernameScreen.style.display = "none";
+            startScreen.style.display = "none";
             bird.style.display = "block";
             bird.style.top = birdY + "px";
-            bird.style.left = birdX + "px";
             scoreDisplay.style.display = "block";
             highScoreDisplay.style.display = "block";
             difficultyDisplay.style.display = "block";
             ground.style.display = "block";
             bird.classList.add("flapping");
 
+            // Start countdown
             isCountdownActive = true;
             countdownDisplay.style.display = "block";
             let countdown = 3;
@@ -370,66 +297,11 @@
             }, 1000);
         }
 
-        startButton.addEventListener("click", showUsernameScreen);
-
-        submitUsername.addEventListener("click", () => {
-            const username = usernameInput.value.trim();
-            if (username.length > 0) {
-                currentUsername = username;
-                startGame();
-            } else {
-                alert("Please enter a username!");
-            }
-        });
-
-        usernameInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") {
-                submitUsername.click();
-            }
-        });
-
-        function showLeaderboard() {
-            startScreen.style.display = "none";
-            leaderboardScreen.style.display = "block";
-            
-            leaderboardList.innerHTML = "";
-            const sortedLeaderboard = [...leaderboard].sort((a, b) => b.score - a.score).slice(0, 10);
-            
-            sortedLeaderboard.forEach((entry, index) => {
-                const li = document.createElement("li");
-                li.innerHTML = `<span>${index + 1}. ${entry.username}</span><span>${entry.score}</span>`;
-                leaderboardList.appendChild(li);
-            });
-        }
-
-        leaderboardButton.addEventListener("click", showLeaderboard);
-
-        closeLeaderboard.addEventListener("click", () => {
-            leaderboardScreen.style.display = "none";
-            startScreen.style.display = "block";
-        });
-
-        function updateLeaderboard() {
-            const existingEntry = leaderboard.find(entry => entry.username === currentUsername);
-            if (existingEntry) {
-                if (score > existingEntry.score) {
-                    existingEntry.score = score;
-                    existingEntry.difficulty = selectedDifficulty;
-                }
-            } else {
-                leaderboard.push({
-                    username: currentUsername,
-                    score: score,
-                    difficulty: selectedDifficulty,
-                    date: new Date().toISOString()
-                });
-            }
-            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-        }
+        startButton.addEventListener("click", startGame);
 
         function jump(event) {
             if (event.code === "Space" && !isGameOver && isGameStarted && !isCountdownActive) {
-                velocity = selectedDifficulty === "easy" ? -8 : -12;  // Removed speedBoost effect from jump
+                velocity = speedBoostActive ? -15 : (selectedDifficulty === "easy" ? -8 : -12);
                 bird.classList.add("jumping");
                 jumpSound.play().catch(() => {});
                 setTimeout(() => bird.classList.remove("jumping"), 200);
@@ -441,26 +313,18 @@
 
             velocity += gravity;
             birdY += velocity;
-            birdX += horizontalSpeed;  // Update horizontal position
             
             if (birdY < 0) {
                 birdY = 0;
                 velocity = 0;
             }
             if (birdY > 550) {
-                triggerFeatherExplosion({ x: birdX, y: 550, isGround: true });
+                triggerFeatherExplosion({ x: parseInt(bird.style.left), y: 550, isGround: true });
                 endGame();
                 return;
             }
-            if (birdX > 360) {  // Keep bird within right boundary
-                birdX = 360;
-            }
-            if (birdX < 0) {  // Keep bird within left boundary
-                birdX = 0;
-            }
             
             bird.style.top = birdY + "px";
-            bird.style.left = birdX + "px";
             
             checkCollisions();
             updateScore();
@@ -507,7 +371,7 @@
                 }
 
                 let currentLeft = parseInt(obstacleTop.style.left);
-                currentLeft -= obstacleSpeed;  // Removed speedBoost effect from obstacles
+                currentLeft -= speedBoostActive ? obstacleSpeed * 1.5 : obstacleSpeed;
                 
                 if (currentLeft < -50) {
                     obstacleTop.remove();
@@ -541,7 +405,7 @@
                 }
 
                 let currentLeft = parseInt(coin.style.left);
-                currentLeft -= obstacleSpeed;  // Match obstacle speed
+                currentLeft -= speedBoostActive ? obstacleSpeed * 1.5 : obstacleSpeed;
                 
                 if (currentLeft < -20) {
                     coin.remove();
@@ -574,7 +438,7 @@
                 }
 
                 let currentLeft = parseInt(powerUpElement.style.left);
-                currentLeft -= obstacleSpeed;  // Match obstacle speed
+                currentLeft -= speedBoostActive ? obstacleSpeed * 1.5 : obstacleSpeed;
                 
                 if (currentLeft < -20) {
                     powerUpElement.remove();
@@ -591,7 +455,7 @@
             const birdRect = bird.getBoundingClientRect();
             const obstacles = document.querySelectorAll('.obstacle');
             const coins = document.querySelectorAll('.coin');
-            const powerUpElements = document.querySelectorAll('.power-up');
+            const powerUpElements = document.querySelectorAll('.power-up'); // Renamed to avoid conflict
             
             obstacles.forEach(obstacle => {
                 const obsRect = obstacle.getBoundingClientRect();
@@ -614,7 +478,7 @@
                     if (hasShield) {
                         hasShield = false;
                         bird.style.backgroundColor = "transparent";
-                        obstacle.remove();
+                        obstacle.remove(); // Remove the obstacle when shield is active
                     } else {
                         triggerFeatherExplosion({ 
                             x: collisionX - 20, 
@@ -647,7 +511,7 @@
                     birdRect.bottom > powerUpRect.top) {
                     powerUpSound.play().catch(() => {});
                     const powerUp = powerUps.find(p => p.type === powerUpElement.dataset.type);
-                    if (powerUp) {
+                    if (powerUp) { // Ensure powerUp exists before calling effect
                         powerUp.effect(powerUp.duration);
                         powerUpElement.remove();
                         score += 10;
@@ -723,11 +587,9 @@
 
         function activateSpeedBoost(duration) {
             speedBoostActive = true;
-            horizontalSpeed = 2;  // Set horizontal speed to 2 pixels per frame
             bird.style.color = "#FF4500";
             setTimeout(() => {
                 speedBoostActive = false;
-                horizontalSpeed = baseHorizontalSpeed;  // Reset to base speed (0)
                 bird.style.color = "inherit";
             }, duration);
         }
@@ -761,10 +623,9 @@
                 isGameOver = true;
                 bird.classList.remove("flapping");
                 clearInterval(gameLoop);
-                updateLeaderboard();
                 setTimeout(() => {
                     alert(`Game Over!\nScore: ${score}\nHigh Score: ${highScore}`);
-                    showLeaderboard();
+                    location.reload();
                 }, 1000);
             }
         }
