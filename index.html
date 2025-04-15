@@ -224,6 +224,7 @@
         let speedBoostActive = false;
         let shrinkActive = false;
         let originalBirdSize = { width: 40, height: 40, fontSize: 40 };
+        let baseObstacleSpeed; // Store the base speed for restoration after boost
 
         // Sound effects
         const jumpSound = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
@@ -260,7 +261,8 @@
         function startGame() {
             const settings = difficultySettings[selectedDifficulty];
             gravity = settings.gravity;
-            obstacleSpeed = settings.obstacleSpeed;
+            baseObstacleSpeed = settings.obstacleSpeed; // Store base speed
+            obstacleSpeed = baseObstacleSpeed; // Initialize with base speed
             obstacleFrequency = settings.obstacleFrequency;
 
             startScreen.style.display = "none";
@@ -301,7 +303,7 @@
 
         function jump(event) {
             if (event.code === "Space" && !isGameOver && isGameStarted && !isCountdownActive) {
-                velocity = speedBoostActive ? -15 : (selectedDifficulty === "easy" ? -8 : -12);
+                velocity = selectedDifficulty === "easy" ? -8 : -12; // Removed speedBoost effect on jump
                 bird.classList.add("jumping");
                 jumpSound.play().catch(() => {});
                 setTimeout(() => bird.classList.remove("jumping"), 200);
@@ -371,7 +373,7 @@
                 }
 
                 let currentLeft = parseInt(obstacleTop.style.left);
-                currentLeft -= speedBoostActive ? obstacleSpeed * 1.5 : obstacleSpeed;
+                currentLeft -= obstacleSpeed; // Use current obstacleSpeed
                 
                 if (currentLeft < -50) {
                     obstacleTop.remove();
@@ -405,7 +407,7 @@
                 }
 
                 let currentLeft = parseInt(coin.style.left);
-                currentLeft -= speedBoostActive ? obstacleSpeed * 1.5 : obstacleSpeed;
+                currentLeft -= obstacleSpeed; // Use current obstacleSpeed
                 
                 if (currentLeft < -20) {
                     coin.remove();
@@ -438,7 +440,7 @@
                 }
 
                 let currentLeft = parseInt(powerUpElement.style.left);
-                currentLeft -= speedBoostActive ? obstacleSpeed * 1.5 : obstacleSpeed;
+                currentLeft -= obstacleSpeed; // Use current obstacleSpeed
                 
                 if (currentLeft < -20) {
                     powerUpElement.remove();
@@ -455,7 +457,7 @@
             const birdRect = bird.getBoundingClientRect();
             const obstacles = document.querySelectorAll('.obstacle');
             const coins = document.querySelectorAll('.coin');
-            const powerUpElements = document.querySelectorAll('.power-up'); // Renamed to avoid conflict
+            const powerUpElements = document.querySelectorAll('.power-up');
             
             obstacles.forEach(obstacle => {
                 const obsRect = obstacle.getBoundingClientRect();
@@ -478,7 +480,7 @@
                     if (hasShield) {
                         hasShield = false;
                         bird.style.backgroundColor = "transparent";
-                        obstacle.remove(); // Remove the obstacle when shield is active
+                        obstacle.remove();
                     } else {
                         triggerFeatherExplosion({ 
                             x: collisionX - 20, 
@@ -511,7 +513,7 @@
                     birdRect.bottom > powerUpRect.top) {
                     powerUpSound.play().catch(() => {});
                     const powerUp = powerUps.find(p => p.type === powerUpElement.dataset.type);
-                    if (powerUp) { // Ensure powerUp exists before calling effect
+                    if (powerUp) {
                         powerUp.effect(powerUp.duration);
                         powerUpElement.remove();
                         score += 10;
@@ -587,9 +589,11 @@
 
         function activateSpeedBoost(duration) {
             speedBoostActive = true;
+            obstacleSpeed = baseObstacleSpeed * 1.5; // Increase speed by 50%
             bird.style.color = "#FF4500";
             setTimeout(() => {
                 speedBoostActive = false;
+                obstacleSpeed = baseObstacleSpeed; // Restore original speed
                 bird.style.color = "inherit";
             }, duration);
         }
